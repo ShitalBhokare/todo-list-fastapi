@@ -5,7 +5,6 @@ let editId = null;
 
 document.addEventListener("DOMContentLoaded", loadTodos);
 
-// Load Todos
 async function loadTodos() {
   try {
     const res = await fetch(BASE_URL);
@@ -17,7 +16,6 @@ async function loadTodos() {
   }
 }
 
-// Render Todos
 function renderTodos(todos) {
   const list = document.getElementById("todoList");
   list.innerHTML = "";
@@ -29,15 +27,17 @@ function renderTodos(todos) {
 
     div.innerHTML = `
       <div class="left">
-        <input type="checkbox" ${todo.completed ? "checked" : ""} onchange="toggleTodo(${todo.id}, this.checked)">
+        <input type="checkbox" ${todo.completed ? "checked" : ""} 
+        onchange="toggleTodo(${todo.id}, this.checked)">
         <div>
           <h3>${todo.title}</h3>
           <p>${todo.description || ""}</p>
         </div>
       </div>
+
       <div class="actions">
-        <button onclick="openModal(${todo.id})">✏</button>
-        <button onclick="deleteTodo(${todo.id})">🗑</button>
+        <button class="edit-btn" onclick="openModal(${todo.id})">✏</button>
+        <button class="delete-btn" onclick="deleteTodo(${todo.id})">🗑</button>
       </div>
     `;
 
@@ -45,100 +45,80 @@ function renderTodos(todos) {
   });
 }
 
-// Add Todo
 async function addTodo() {
   const title = document.getElementById("taskTitle").value.trim();
   const description = document.getElementById("taskDesc").value.trim();
-
   if (!title) return alert("Title required");
 
-  try {
-    await fetch(BASE_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, description }),
-    });
-    document.getElementById("taskTitle").value = "";
-    document.getElementById("taskDesc").value = "";
-    loadTodos();
-  } catch (err) {
-    console.error("Add todo failed:", err);
-  }
+  await fetch(BASE_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title, description }),
+  });
+
+  document.getElementById("taskTitle").value = "";
+  document.getElementById("taskDesc").value = "";
+  loadTodos();
 }
 
-// Toggle Complete
 async function toggleTodo(id, completed) {
   const todo = todosData.find((t) => t.id === id);
-  try {
-    await fetch(`${BASE_URL}/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        title: todo.title,
-        description: todo.description,
-        completed,
-      }),
-    });
-    loadTodos();
-  } catch (err) {
-    console.error("Toggle failed:", err);
-  }
+
+  await fetch(`${BASE_URL}/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      title: todo.title,
+      description: todo.description,
+      completed,
+    }),
+  });
+
+  loadTodos();
 }
 
-// Delete Todo
 async function deleteTodo(id) {
   if (!confirm("Delete this task?")) return;
-  try {
-    await fetch(`${BASE_URL}/${id}`, { method: "DELETE" });
-    loadTodos();
-  } catch (err) {
-    console.error("Delete failed:", err);
-  }
+
+  await fetch(`${BASE_URL}/${id}`, { method: "DELETE" });
+  loadTodos();
 }
 
-// Open Modal
 function openModal(id) {
   const todo = todosData.find((t) => t.id === id);
   editId = id;
 
   document.getElementById("editTitle").value = todo.title;
   document.getElementById("editDesc").value = todo.description || "";
-
   document.getElementById("editModal").classList.add("active");
 }
 
-// Close Modal
 function closeModal() {
   document.getElementById("editModal").classList.remove("active");
   editId = null;
 }
 
-// Update Todo
 async function updateTodo() {
   const title = document.getElementById("editTitle").value.trim();
   const description = document.getElementById("editDesc").value.trim();
-
   if (!title) return alert("Title required");
 
   const todo = todosData.find((t) => t.id === editId);
-  try {
-    await fetch(`${BASE_URL}/${editId}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        title,
-        description,
-        completed: todo.completed,
-      }),
-    });
-    closeModal();
-    loadTodos();
-  } catch (err) {
-    console.error("Update failed:", err);
-  }
+
+  await fetch(`${BASE_URL}/${editId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      title,
+      description,
+      completed: todo.completed,
+    }),
+  });
+
+  closeModal();
+  loadTodos();
 }
 
-// Search Todos
 function searchTodos() {
   const q = document.getElementById("searchInput").value.toLowerCase();
   renderTodos(
@@ -150,14 +130,12 @@ function searchTodos() {
   );
 }
 
-// Filter Todos
 function filterTodos(type) {
   if (type === "all") renderTodos(todosData);
   if (type === "completed") renderTodos(todosData.filter((t) => t.completed));
   if (type === "pending") renderTodos(todosData.filter((t) => !t.completed));
 }
 
-// Progress Bar
 function updateProgress() {
   const total = todosData.length;
   const completed = todosData.filter((t) => t.completed).length;
