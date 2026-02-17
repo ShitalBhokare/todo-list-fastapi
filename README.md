@@ -1,4 +1,4 @@
-# 📝 Modern Todo App – FastAPI & JavaScript Frontend
+# 📝 Modern Todo App 
 
 A **modern and interactive Todo application** that helps users manage their daily tasks efficiently.  
 It features a clean and responsive **frontend interface** built with **HTML, CSS, and JavaScript**, and a robust **backend API** powered by **FastAPI and SQLite** for data persistence.
