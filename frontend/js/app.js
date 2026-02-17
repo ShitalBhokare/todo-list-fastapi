@@ -7,10 +7,14 @@ document.addEventListener("DOMContentLoaded", loadTodos);
 
 // Load Todos
 async function loadTodos() {
-  const res = await fetch(BASE_URL);
-  todosData = await res.json();
-  renderTodos(todosData);
-  updateProgress();
+  try {
+    const res = await fetch(BASE_URL);
+    todosData = await res.json();
+    renderTodos(todosData);
+    updateProgress();
+  } catch (err) {
+    console.error("Error loading todos:", err);
+  }
 }
 
 // Render Todos
@@ -25,14 +29,12 @@ function renderTodos(todos) {
 
     div.innerHTML = `
       <div class="left">
-        <input type="checkbox" ${todo.completed ? "checked" : ""}
-          onchange="toggleTodo(${todo.id}, this.checked)">
+        <input type="checkbox" ${todo.completed ? "checked" : ""} onchange="toggleTodo(${todo.id}, this.checked)">
         <div>
           <h3>${todo.title}</h3>
           <p>${todo.description || ""}</p>
         </div>
       </div>
-
       <div class="actions">
         <button onclick="openModal(${todo.id})">✏</button>
         <button onclick="deleteTodo(${todo.id})">🗑</button>
@@ -50,33 +52,48 @@ async function addTodo() {
 
   if (!title) return alert("Title required");
 
-  await fetch(BASE_URL + "/", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ title, description }),
-  });
-
-  document.getElementById("taskTitle").value = "";
-  document.getElementById("taskDesc").value = "";
-
-  loadTodos();
+  try {
+    await fetch(BASE_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title, description }),
+    });
+    document.getElementById("taskTitle").value = "";
+    document.getElementById("taskDesc").value = "";
+    loadTodos();
+  } catch (err) {
+    console.error("Add todo failed:", err);
+  }
 }
 
-// Toggle
+// Toggle Complete
 async function toggleTodo(id, completed) {
-  await fetch(`${BASE_URL}/${id}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ completed }),
-  });
-  loadTodos();
+  const todo = todosData.find((t) => t.id === id);
+  try {
+    await fetch(`${BASE_URL}/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: todo.title,
+        description: todo.description,
+        completed,
+      }),
+    });
+    loadTodos();
+  } catch (err) {
+    console.error("Toggle failed:", err);
+  }
 }
 
-// Delete
+// Delete Todo
 async function deleteTodo(id) {
   if (!confirm("Delete this task?")) return;
-  await fetch(`${BASE_URL}/${id}`, { method: "DELETE" });
-  loadTodos();
+  try {
+    await fetch(`${BASE_URL}/${id}`, { method: "DELETE" });
+    loadTodos();
+  } catch (err) {
+    console.error("Delete failed:", err);
+  }
 }
 
 // Open Modal
@@ -93,6 +110,7 @@ function openModal(id) {
 // Close Modal
 function closeModal() {
   document.getElementById("editModal").classList.remove("active");
+  editId = null;
 }
 
 // Update Todo
@@ -102,17 +120,25 @@ async function updateTodo() {
 
   if (!title) return alert("Title required");
 
-  await fetch(`${BASE_URL}/${editId}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ title, description }),
-  });
-
-  closeModal();
-  loadTodos();
+  const todo = todosData.find((t) => t.id === editId);
+  try {
+    await fetch(`${BASE_URL}/${editId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title,
+        description,
+        completed: todo.completed,
+      }),
+    });
+    closeModal();
+    loadTodos();
+  } catch (err) {
+    console.error("Update failed:", err);
+  }
 }
 
-// Search
+// Search Todos
 function searchTodos() {
   const q = document.getElementById("searchInput").value.toLowerCase();
   renderTodos(
@@ -124,14 +150,14 @@ function searchTodos() {
   );
 }
 
-// Filter
+// Filter Todos
 function filterTodos(type) {
   if (type === "all") renderTodos(todosData);
   if (type === "completed") renderTodos(todosData.filter((t) => t.completed));
   if (type === "pending") renderTodos(todosData.filter((t) => !t.completed));
 }
 
-// Progress
+// Progress Bar
 function updateProgress() {
   const total = todosData.length;
   const completed = todosData.filter((t) => t.completed).length;
